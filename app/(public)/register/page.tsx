@@ -9,9 +9,12 @@ import type { RowDataPacket } from "mysql2/promise";
 
 // Hache un mot de passe avec un sel unique avant stockage.
 function hashPassword(password: string) {
+  // Génère un sel aléatoire pour renforcer le hash.
   const salt = crypto.randomBytes(16).toString("hex");
+  // Dérive un hash PBKDF2 robuste pour le stockage.
   const derived = crypto.pbkdf2Sync(password, salt, 120000, 32, "sha256").toString("hex");
 
+  // Conserve le sel et le hash dans une seule chaîne simple.
   return `${salt}$${derived}`;
 }
 
@@ -23,16 +26,20 @@ async function registerAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
+  // Récupère le rôle demandé, avec patient par défaut.
   const role = String(formData.get("role") ?? "patient") as AuthRole;
 
+  // Bloque les inscriptions incomplètes avant toute écriture.
   if (!email || !password || !firstName || !lastName) {
     redirect("/register?error=missing");
   }
 
+  // Valide le rôle choisi côté serveur.
   if (!["patient", "doctor", "secretary", "clinic_admin"].includes(role)) {
     redirect("/register?error=role");
   }
 
+  // Vérifie qu'aucun utilisateur n'existe déjà avec cet email.
   const [existingRows] = await mysqlPool.query<(RowDataPacket & { id: string })[]>(
     "SELECT id FROM utilisateurs WHERE email = ? LIMIT 1",
     [email],
@@ -42,7 +49,9 @@ async function registerAction(formData: FormData) {
     redirect("/register?error=duplicate");
   }
 
+  // Génère l'identifiant avant l'insertion pour rester explicite.
   const userId = crypto.randomUUID();
+  // Hache le mot de passe avant stockage en base.
   const hashedPassword = hashPassword(password);
 
   await mysqlPool.execute(
@@ -64,6 +73,7 @@ export default function RegisterPage({
 }: {
   searchParams?: { error?: string };
 }) {
+  // Affiche un message simple selon le paramètre d'erreur reçu.
   const errorMessage =
     searchParams?.error === "missing"
       ? "Tous les champs obligatoires doivent etre renseignes."

@@ -9,8 +9,10 @@ import type { RowDataPacket } from "mysql2/promise";
 
 // Vérifie un mot de passe avec le hash PBKDF2 stocké en base.
 function verifyPassword(password: string, storedHash: string) {
+  // Sépare le sel du hash enregistrés dans la même chaîne.
   const [salt, hash] = storedHash.split("$");
 
+  // Refuse les formats de hash incomplets.
   if (!salt || !hash) {
     return false;
   }
@@ -27,10 +29,12 @@ async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
 
+  // Réclame les deux champs obligatoires avant d'interroger la base.
   if (!email || !password) {
     redirect("/login?error=missing");
   }
 
+  // Récupère l'utilisateur correspondant à l'email saisi.
   const [rows] = await mysqlPool.query<(RowDataPacket & {
     id: string;
     email: string;
@@ -38,12 +42,16 @@ async function loginAction(formData: FormData) {
     password_hash: string | null;
   })[]>("SELECT id, email, role, password_hash FROM utilisateurs WHERE email = ? LIMIT 1", [email]);
 
+  // Prend le premier résultat car l'email est unique.
+  // Prend la première ligne car l'email est unique.
   const user = rows[0];
 
+  // Refuse les comptes inconnus ou incomplets.
   if (!user || !user.password_hash) {
     redirect("/login?error=invalid");
   }
 
+  // Refuse les mauvais mots de passe sans révéler d'information.
   if (!verifyPassword(password, user.password_hash)) {
     redirect("/login?error=invalid");
   }
@@ -62,6 +70,7 @@ export default function LoginPage({
 }: {
   searchParams?: { error?: string };
 }) {
+  // Affiche un message simple selon le paramètre d'erreur reçu.
   const errorMessage =
     searchParams?.error === "missing"
       ? "Email et mot de passe sont requis."

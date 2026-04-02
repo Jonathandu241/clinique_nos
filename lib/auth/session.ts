@@ -5,7 +5,9 @@ import { cookies } from "next/headers";
 import { AUTH_COOKIE_MAX_AGE_SECONDS, AUTH_COOKIE_NAME, AUTH_SECRET_FALLBACK, type AuthSessionUser } from "../../auth";
 
 type SessionPayload = {
+  // Utilisateur minimal stocké dans le cookie de session.
   user: AuthSessionUser;
+  // Date d'expiration absolue de la session en millisecondes.
   expiresAt: number;
 };
 
@@ -31,10 +33,12 @@ function encodeSession(session: SessionPayload) {
 function decodeSession(cookieValue: string) {
   const [payload, signature] = cookieValue.split(".");
 
+  // Refuse les cookies mal formés.
   if (!payload || !signature) {
     return null;
   }
 
+  // Refuse les cookies altérés.
   if (signPayload(payload) !== signature) {
     return null;
   }
@@ -42,6 +46,7 @@ function decodeSession(cookieValue: string) {
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as SessionPayload;
 
+    // Refuse les sessions expirées.
     if (parsed.expiresAt < Date.now()) {
       return null;
     }
