@@ -193,118 +193,118 @@ Tradeoff:
 
 ### Tables principales
 
-- `users`
-- `patient_profiles`
-- `doctor_profiles`
-- `availabilities`
-- `availability_slots`
-- `appointments`
-- `payment_transactions`
-- `notification_events`
-- `audit_logs`
+- `utilisateurs`
+- `profils_patients`
+- `profils_medecins`
+- `disponibilites`
+- `creneaux_disponibilite`
+- `rendezvous`
+- `transactions_paiement`
+- `evenements_notification`
+- `journaux_audit`
 
 ### Schema logique minimal
 
-#### `users`
+#### `utilisateurs`
 
 - `id`
 - `email`
 - `password_hash` ou identifiant fournisseur auth
 - `role`
-- `first_name`
-- `last_name`
+- `prenom`
+- `nom`
 - `phone`
-- `created_at`
-- `updated_at`
+- `date_creation`
+- `date_mise_a_jour`
 
-#### `doctor_profiles`
-
-- `id`
-- `user_id`
-- `specialty` `[hypothese]`
-- `is_active`
-
-#### `patient_profiles`
+#### `profils_medecins`
 
 - `id`
 - `user_id`
-- `date_of_birth` `[hypothese]`
+- `specialite` `[hypothese]`
+- `actif`
+
+#### `profils_patients`
+
+- `id`
+- `user_id`
+- `date_naissance` `[hypothese]`
 - `gender` `[hypothese]`
 
-#### `availabilities`
+#### `disponibilites`
 
 - `id`
-- `doctor_id`
-- `created_by_user_id`
-- `starts_at`
-- `ends_at`
+- `medecin_id`
+- `cree_par_utilisateur_id`
+- `debut`
+- `fin`
 - `source`
 - `status`
 
-#### `availability_slots`
+#### `creneaux_disponibilite`
 
 - `id`
-- `availability_id`
-- `doctor_id`
-- `starts_at`
-- `ends_at`
+- `disponibilite_id`
+- `medecin_id`
+- `debut`
+- `fin`
 - `status` (`open`, `reserved`, `blocked`, `expired`)
 
-#### `appointments`
+#### `rendezvous`
 
 - `id`
 - `patient_id`
-- `doctor_id`
-- `availability_slot_id`
+- `medecin_id`
+- `creneau_disponibilite_id`
 - `status` (`pending`, `confirmed`, `cancelled`, `completed`, `expired_unpaid`)
-- `payment_status` (`unpaid`, `due`, `paid`, `failed`, `refunded`)
-- `payment_due_at`
-- `booked_at`
-- `confirmed_at`
-- `cancelled_at`
-- `completed_at`
-- `cancellation_reason`
-- `notes_internal` `[hypothese]`
+- `etat_paiement` (`unpaid`, `due`, `paid`, `failed`, `refunded`)
+- `date_echeance_paiement`
+- `date_reservation`
+- `date_confirmation`
+- `date_annulation`
+- `date_fin`
+- `motif_annulation`
+- `notes_internes` `[hypothese]`
 
-#### `payment_transactions`
+#### `transactions_paiement`
 
 - `id`
-- `appointment_id`
+- `rendezvous_id`
 - `provider`
-- `provider_reference`
+- `reference_fournisseur`
 - `amount`
 - `currency`
 - `status`
-- `initiated_at`
-- `confirmed_at`
+- `date_initiation`
+- `date_confirmation`
 - `payload_json`
 
-#### `notification_events`
+#### `evenements_notification`
 
 - `id`
-- `appointment_id`
+- `rendezvous_id`
 - `channel`
 - `template`
 - `recipient`
 - `status`
-- `sent_at`
-- `provider_reference`
+- `date_envoi`
+- `reference_fournisseur`
 
-#### `audit_logs`
+#### `journaux_audit`
 
 - `id`
-- `entity_type`
-- `entity_id`
+- `type_entite`
+- `identifiant_entite`
 - `action`
-- `actor_user_id`
-- `metadata_json`
-- `created_at`
+- `utilisateur_acteur_id`
+- `metadonnees_json`
+- `date_creation`
 
 ### Contraintes critiques
 
-- unicite sur un slot reserve par un seul rendez-vous actif ;
+- unicite sur un creneau reserve par un seul rendez-vous actif ;
 - transactions obligatoires lors de la reservation ;
-- index sur `appointments.payment_due_at`, `appointments.status`, `availability_slots.starts_at` ;
+- index sur `rendezvous.date_echeance_paiement`, `rendezvous.status`, `creneaux_disponibilite.debut` ;
 - dates stockees en UTC ;
 - montants stockes en `DECIMAL`, jamais en flottants.
 
@@ -312,16 +312,16 @@ Tradeoff:
 
 ### 6.1 Reservation d'un creneau
 
-1. Charger les slots `open`.
+1. Charger les creneaux `open`.
 2. Soumettre le formulaire de reservation.
 3. Valider l'entree avec Zod.
 4. Verifier la session patient.
 5. Ouvrir une transaction base:
-   - relire le slot ;
+   - relire le creneau ;
    - verifier qu'il est toujours `open` ;
    - creer le rendez-vous ;
-   - passer le slot en `reserved`.
-6. Calculer `payment_due_at`.
+   - passer le creneau en `reserved`.
+6. Calculer `date_echeance_paiement`.
 7. Ecrire l'audit log.
 8. Declencher les notifications.
 9. Revalider la page patient et la vue staff.
@@ -345,7 +345,7 @@ Tradeoff:
 4. Pour chaque rendez-vous:
    - verifier statut actuel ;
    - passer le rendez-vous en `expired_unpaid` ;
-   - liberer le slot ;
+   - liberer le creneau ;
    - ecrire audit ;
    - envoyer notification.
 
@@ -418,10 +418,10 @@ Client Components uniquement pour:
 
 ### Integration
 
-- reservation transactionnelle d'un slot ;
+- reservation transactionnelle d'un creneau ;
 - paiement confirme via webhook ;
-- expiration automatique libere le slot ;
-- reprogrammation conserve la coherence rendez-vous/slot.
+- expiration automatique libere le creneau ;
+- reprogrammation conserve la coherence rendez-vous/creneau.
 
 ### E2E
 
@@ -537,7 +537,7 @@ Client Components uniquement pour:
 **Steps:**
 
 1. Definir les DTO et validations.
-2. Creer la logique de generation de slots.
+2. Creer la logique de generation de creneaux.
 3. Ajouter la page staff de gestion des disponibilites.
 4. Ecrire les tests unitaires de generation.
 5. Ecrire un test d'integration de creation de disponibilite.
@@ -554,10 +554,10 @@ Client Components uniquement pour:
 
 **Steps:**
 
-1. Lire les slots ouverts cote serveur.
+1. Lire les creneaux ouverts cote serveur.
 2. Ajouter le formulaire de reservation.
 3. Ecrire la transaction de reservation.
-4. Calculer `payment_due_at`.
+4. Calculer `date_echeance_paiement`.
 5. Revalider les vues impactees.
 6. Tester le conflit de reservation.
 
@@ -643,7 +643,7 @@ Client Components uniquement pour:
 1. Ajouter les transitions metier autorisees.
 2. Implementer annulation staff.
 3. Implementer reprogrammation staff.
-4. Mettre a jour slot et audit.
+4. Mettre a jour creneau et audit.
 5. Notifier patient et equipe si necessaire.
 
 ### Task 11: Ajouter audit et observabilite minimale

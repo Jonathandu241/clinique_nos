@@ -80,15 +80,15 @@ lib/
 .env
 .env.example
 modules/
-  users/
+  utilisateurs/
     types.ts
   auth/
     types.ts
-  doctors/
+  medecins/
     types.ts
   availability/
     types.ts
-  appointments/
+  rendezvous/
     types.ts
   payments/
     types.ts
@@ -102,15 +102,15 @@ modules/
 
 ### Tables principales
 
-- `users`
-- `patient_profiles`
-- `doctor_profiles`
-- `availabilities`
-- `availability_slots`
-- `appointments`
-- `payment_transactions`
-- `notification_events`
-- `audit_logs`
+- `utilisateurs`
+- `profils_patients`
+- `profils_medecins`
+- `disponibilites`
+- `creneaux_disponibilite`
+- `rendezvous`
+- `transactions_paiement`
+- `evenements_notification`
+- `journaux_audit`
 
 ### Enums recommandés
 
@@ -124,10 +124,46 @@ modules/
 - `NotificationStatus`
 - `AuditAction`
 
+### Correspondance des champs
+
+- `password_hash` -> `mot_de_passe_hash`
+- `first_name` -> `prenom`
+- `last_name` -> `nom`
+- `phone` -> `telephone`
+- `created_at` -> `date_creation`
+- `updated_at` -> `date_mise_a_jour`
+- `user_id` -> `utilisateur_id`
+- `specialty` -> `specialite`
+- `is_active` -> `actif`
+- `date_of_birth` -> `date_naissance`
+- `gender` -> `sexe`
+- `doctor_id` -> `medecin_id`
+- `created_by_user_id` -> `cree_par_utilisateur_id`
+- `starts_at` -> `date_debut`
+- `ends_at` -> `date_fin`
+- `availability_id` -> `disponibilite_id`
+- `availability_slot_id` -> `creneau_disponibilite_id`
+- `payment_status` -> `etat_paiement`
+- `payment_due_at` -> `date_echeance_paiement`
+- `booked_at` -> `date_reservation`
+- `confirmed_at` -> `date_confirmation`
+- `cancelled_at` -> `date_annulation`
+- `completed_at` -> `date_fin`
+- `cancellation_reason` -> `motif_annulation`
+- `notes_internal` -> `notes_internes`
+- `appointment_id` -> `rendezvous_id`
+- `provider_reference` -> `reference_fournisseur`
+- `initiated_at` -> `date_initiation`
+- `sent_at` -> `date_envoi`
+- `entity_type` -> `type_entite`
+- `entity_id` -> `identifiant_entite`
+- `actor_user_id` -> `utilisateur_acteur_id`
+- `metadata_json` -> `metadonnees_json`
+
 ## Contraintes minimales
 
 - un email utilisateur unique ;
-- un slot de disponibilite ne peut etre reserve que par un seul rendez-vous actif ;
+- un creneau de disponibilite ne peut etre reserve que par un seul rendez-vous actif ;
 - les dates critiques sont indexees ;
 - les montants sont en `DECIMAL`, jamais en flottant ;
 - les relations metier principales sont explicites et indexees ;
@@ -311,7 +347,7 @@ Definir:
 
 - unicite des emails ;
 - relations 1:1 entre user et profils metier si requis ;
-- indexes sur `payment_due_at`, `status`, `starts_at` ;
+- indexes sur `date_echeance_paiement`, `statut`, `date_debut` ;
 - foreign keys sur les references metier ;
 - timestamps `createdAt` / `updatedAt`.
 
@@ -574,4 +610,3 @@ git commit -m "chore: finalize initial database schema"
 - introduire trop de logique metier dans le schema ;
 - creer des modeles ou enums inutiles avant les tasks suivantes ;
 - ne pas generer de migration propre apres le schema.
-
