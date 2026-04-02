@@ -1,0 +1,240 @@
+/// Schéma Prisma principal de Clinique NOS pour MySQL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserRole {
+  patient
+  doctor
+  secretary
+  clinic_admin
+}
+
+enum AvailabilityStatus {
+  active
+  inactive
+}
+
+enum AvailabilitySlotStatus {
+  open
+  reserved
+  blocked
+  expired
+}
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+  expired_unpaid
+}
+
+enum PaymentStatus {
+  unpaid
+  due
+  paid
+  failed
+  refunded
+}
+
+enum PaymentTransactionStatus {
+  initiated
+  confirmed
+  failed
+  cancelled
+}
+
+enum NotificationChannel {
+  email
+  sms
+  whatsapp
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
+}
+
+enum AuditAction {
+  create
+  confirm
+  pay
+  cancel
+  reschedule
+  expire
+}
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  passwordHash String?   @map("password_hash")
+  role        UserRole
+  firstName   String     @map("first_name")
+  lastName    String     @map("last_name")
+  phone       String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  patientProfile PatientProfile?
+  doctorProfile  DoctorProfile?
+  createdAvailabilities Availability[] @relation("AvailabilityCreatedBy")
+  auditLogs      AuditLog[] @relation("AuditActor")
+
+  @@map("users")
+}
+
+model PatientProfile {
+  id        String  @id @default(cuid())
+  userId    String  @unique @map("user_id")
+  dateOfBirth DateTime? @map("date_of_birth")
+  gender    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@map("patient_profiles")
+}
+
+model DoctorProfile {
+  id         String  @id @default(cuid())
+  userId     String  @unique @map("user_id")
+  specialty  String?
+  isActive   Boolean @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availabilities Availability[]
+  slots          AvailabilitySlot[]
+  appointments   Appointment[]
+
+  @@map("doctor_profiles")
+}
+
+model Availability {
+  id             String             @id @default(cuid())
+  doctorId       String             @map("doctor_id")
+  createdByUserId String            @map("created_by_user_id")
+  startsAt       DateTime           @map("starts_at")
+  endsAt         DateTime           @map("ends_at")
+  source         String?
+  status         AvailabilityStatus @default(active)
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  doctor         DoctorProfile     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  createdBy      User              @relation("AvailabilityCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  slots          AvailabilitySlot[]
+
+  @@index([doctorId, startsAt])
+  @@map("availabilities")
+}
+
+model AvailabilitySlot {
+  id            String                 @id @default(cuid())
+  availabilityId String                 @map("availability_id")
+  doctorId      String                 @map("doctor_id")
+  startsAt      DateTime               @map("starts_at")
+  endsAt        DateTime               @map("ends_at")
+  status        AvailabilitySlotStatus @default(open)
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+
+  availability  Availability @relation(fields: [availabilityId], references: [id], onDelete: Cascade)
+  doctor        DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointment   Appointment?
+
+  @@index([doctorId, startsAt])
+  @@index([status, startsAt])
+  @@map("availability_slots")
+}
+
+model Appointment {
+  id                String            @id @default(cuid())
+  patientId         String            @map("patient_id")
+  doctorId          String            @map("doctor_id")
+  availabilitySlotId String            @unique @map("availability_slot_id")
+  status            AppointmentStatus @default(pending)
+  paymentStatus     PaymentStatus     @default(unpaid) @map("payment_status")
+  paymentDueAt      DateTime?         @map("payment_due_at")
+  bookedAt          DateTime          @default(now()) @map("booked_at")
+  confirmedAt       DateTime?         @map("confirmed_at")
+  cancelledAt       DateTime?         @map("cancelled_at")
+  completedAt       DateTime?         @map("completed_at")
+  cancellationReason String?          @map("cancellation_reason")
+  notesInternal     String?           @map("notes_internal")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  patient         PatientProfile     @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor          DoctorProfile      @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  availabilitySlot AvailabilitySlot  @relation(fields: [availabilitySlotId], references: [id], onDelete: Restrict)
+  paymentTransactions PaymentTransaction[]
+  notificationEvents NotificationEvent[]
+
+  @@index([status, bookedAt])
+  @@index([paymentStatus, paymentDueAt])
+  @@map("appointments")
+}
+
+model PaymentTransaction {
+  id               String                   @id @default(cuid())
+  appointmentId    String                   @map("appointment_id")
+  provider         String
+  providerReference String?                 @map("provider_reference")
+  amount           Decimal                  @db.Decimal(10, 2)
+  currency         String                   @default("XOF")
+  status           PaymentTransactionStatus @default(initiated)
+  initiatedAt      DateTime                 @default(now()) @map("initiated_at")
+  confirmedAt      DateTime?                @map("confirmed_at")
+  payloadJson      Json?                    @map("payload_json")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @updatedAt @map("updated_at")
+
+  appointment      Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId, status])
+  @@map("payment_transactions")
+}
+
+model NotificationEvent {
+  id                String             @id @default(cuid())
+  appointmentId     String             @map("appointment_id")
+  channel           NotificationChannel
+  template          String
+  recipient         String
+  status            NotificationStatus @default(pending)
+  sentAt            DateTime?          @map("sent_at")
+  providerReference String?            @map("provider_reference")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  appointment       Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId, status])
+  @@map("notification_events")
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  entityType   String      @map("entity_type")
+  entityId     String      @map("entity_id")
+  action       AuditAction
+  actorUserId  String?     @map("actor_user_id")
+  metadataJson Json?       @map("metadata_json")
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  actor        User?       @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
