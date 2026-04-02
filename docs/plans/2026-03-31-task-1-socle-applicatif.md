@@ -1,6 +1,14 @@
-# Task 1 - Socle Applicatif Implementation Plan
+# Task 1 - Socle Applicatif Implementation Plan - DONE
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+## Statut
+
+- Task 1 réalisée et validée
+- Socle applicatif Next.js initialisé à la racine
+- Vérifications `lint`, `typecheck` et `build` passées
+- Plan marqué comme terminé
+- Dernier commit lié: `bbf26cf` (`chore: initialize nextjs application shell`)
 
 **Goal:** Initialiser un socle Next.js propre, minimal et evolutif pour la V1 clinique, avec App Router, TypeScript, Tailwind, structure de base, shell UI initial et outils de qualite.
 
