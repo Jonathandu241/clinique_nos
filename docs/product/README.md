@@ -18,6 +18,7 @@ Ce dossier contient le cadrage produit initial de l'application de gestion de re
 - Le pilotage des rendez-vous peut etre assure par le medecin et/ou le secretariat selon les cas.
 - Le paiement de la consultation doit etre effectue 48h avant le rendez-vous.
 - En cas de non-paiement a l'echeance, le rendez-vous est annule automatiquement.
+- Le nom technique du projet Next.js et du package npm est `clinique-nos`.
 
 ## Notes
 

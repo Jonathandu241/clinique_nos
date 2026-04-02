@@ -20,6 +20,12 @@ Le workspace est vide hors dossier `docs/`. Cette task doit donc:
 - rendre possible un `dev`, un `lint` et un `build` propres ;
 - laisser le terrain pret pour les tasks suivantes.
 
+## Convention de nommage
+
+- Le nom technique du projet Next.js doit etre `clinique-nos`.
+- Le nom du package dans `package.json` doit etre `clinique-nos`.
+- Le nom produit visible dans l'interface peut rester `Clinique NOS`.
+
 ## Decision de mise en oeuvre
 
 ### Ce que le socle doit inclure
@@ -78,6 +84,7 @@ tsconfig.json
 - `[hypothese]` Vous partez sur une version recente de Next.js 16 via `create-next-app`.
 - `[hypothese]` Le code restera a la racine du repo, sans dossier `src/`.
 - `[hypothese]` Tailwind est accepte comme base de styling.
+- Le nom technique de reference dans toute la documentation est `clinique-nos`.
 
 ## Tache detaillee
 
@@ -97,12 +104,13 @@ tsconfig.json
 Run:
 
 ```bash
-npx create-next-app@latest . --ts --app --tailwind --eslint --use-npm --import-alias "@/*"
+npx create-next-app@latest clinique-nos --ts --app --tailwind --eslint --use-npm --import-alias "@/*"
 ```
 
 Expected:
 
 - creation des fichiers Next.js standards ;
+- nom du projet initialise a `clinique-nos` ;
 - App Router active ;
 - Tailwind configure ;
 - scripts `dev`, `build`, `start`, `lint` presents dans `package.json`.
@@ -113,6 +121,7 @@ Verifier que `package.json` contient au minimum:
 
 ```json
 {
+  "name": "clinique-nos",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -124,6 +133,7 @@ Verifier que `package.json` contient au minimum:
 
 Expected:
 
+- le nom du package est `clinique-nos` ;
 - les scripts standards existent ;
 - aucune dependance obsolete ou non desiree n'est ajoutee a ce stade.
 
@@ -679,6 +689,8 @@ Contenu recommande:
 
 Socle Next.js pour une application de gestion de rendez-vous clinique.
 
+Nom technique du projet: `clinique-nos`
+
 ## Scripts
 
 - `npm run dev`
@@ -746,3 +758,5 @@ Un squelette Next.js propre, lisible et pret pour brancher:
 - la base MySQL/XAMPP via Prisma dans la Task 2 ;
 - l'authentification et les roles dans la Task 3 ;
 - les modules metier sans refonte structurelle.
+
+Le projet technique et le package npm sont identifies sous le nom `clinique-nos`.

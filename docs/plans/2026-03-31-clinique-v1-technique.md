@@ -10,6 +10,12 @@
 
 ---
 
+## Nom du projet
+
+- Le nom technique du projet Next.js doit etre `clinique-nos`.
+- Le nom du package npm doit etre `clinique-nos`.
+- Le nom produit visible par les utilisateurs peut rester `Clinique NOS`.
+
 ## 1. Principes techniques de la V1
 
 ### Choix d'architecture recommandes
