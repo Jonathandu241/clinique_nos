@@ -59,6 +59,19 @@ async function registerAction(formData: FormData) {
     [userId, email, hashedPassword, role, firstName, lastName],
   );
 
+  // --- NOUVEAU : Création du profil métier spécifique ---
+  if (role === "patient") {
+    await mysqlPool.execute(
+      "INSERT INTO patients (id, user_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())",
+      [crypto.randomUUID(), userId]
+    );
+  } else if (role === "doctor") {
+    await mysqlPool.execute(
+      "INSERT INTO profils_medecins (id, user_id, bio, specialty, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())",
+      [crypto.randomUUID(), userId, "", "Médecine Générale"]
+    );
+  }
+
   await createAuthSession({
     id: userId,
     email,

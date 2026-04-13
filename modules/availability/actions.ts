@@ -5,19 +5,7 @@
 import { requireStaffAccess } from "../../lib/auth/permissions";
 import { createAvailabilitySchema } from "../../lib/validation/availability";
 import { buildAvailabilityDraft } from "./service";
-
-/// Etat de retour simple pour brancher le formulaire au lot suivant.
-export type CreateAvailabilityActionState = {
-  status: "idle" | "success" | "error";
-  message?: string;
-  generatedSlotCount?: number;
-  fieldErrors?: Record<string, string[] | undefined>;
-};
-
-/// Etat initial reutilisable par le futur formulaire React.
-export const INITIAL_CREATE_AVAILABILITY_ACTION_STATE: CreateAvailabilityActionState = {
-  status: "idle",
-};
+import type { CreateAvailabilityActionState } from "./types";
 
 /// Extrait une entree brute depuis un formulaire HTML classique.
 function extractAvailabilityFormData(formData: FormData) {

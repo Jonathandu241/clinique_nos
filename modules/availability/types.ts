@@ -59,3 +59,16 @@ export type AvailabilitySlotRecord = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+/// Etat de retour pour l'action de création de disponibilité.
+export type CreateAvailabilityActionState = {
+  status: "idle" | "success" | "error";
+  message?: string;
+  generatedSlotCount?: number;
+  fieldErrors?: Record<string, string[] | undefined>;
+};
+
+/// Valeur initiale pour les formulaires de disponibilité.
+export const INITIAL_CREATE_AVAILABILITY_ACTION_STATE: CreateAvailabilityActionState = {
+  status: "idle",
+};

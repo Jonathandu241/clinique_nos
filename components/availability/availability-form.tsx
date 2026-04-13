@@ -4,11 +4,11 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { createAvailabilityAction } from "../../modules/availability/actions";
 import {
-  createAvailabilityAction,
   INITIAL_CREATE_AVAILABILITY_ACTION_STATE,
   type CreateAvailabilityActionState,
-} from "../../modules/availability/actions";
+} from "../../modules/availability/types";
 
 type AvailabilityDoctorOption = {
   id: string;
