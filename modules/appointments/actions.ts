@@ -50,6 +50,10 @@ export async function createAppointmentReservationAction(
   try {
     const reservationResult = await reserveAppointment(parsedInput.data, session.id);
 
+    // Déclenchement de la notification (Simulation asynchrone)
+    const { notifyPatientReservationPending } = await import("../notifications/events");
+    notifyPatientReservationPending(reservationResult.appointment.id).catch(console.error);
+
     return {
       status: "success",
       message: "Le creneau a bien ete reserve.",

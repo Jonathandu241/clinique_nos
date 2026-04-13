@@ -52,8 +52,10 @@ type PatientProfileRow = RowDataPacket & {
 type StaffAppointmentRow = AppointmentRow & {
   patient_first_name: string;
   patient_last_name: string;
+  patient_email: string;
   doctor_first_name: string;
   doctor_last_name: string;
+  doctor_email: string;
   starts_at: Date;
   ends_at: Date;
   doctor_specialty: string | null;
@@ -118,8 +120,10 @@ function mapStaffAppointmentRow(row: StaffAppointmentRow): StaffAppointmentRecor
     ...mapAppointmentRow(row),
     patientFirstName: row.patient_first_name,
     patientLastName: row.patient_last_name,
+    patientEmail: row.patient_email,
     doctorFirstName: row.doctor_first_name,
     doctorLastName: row.doctor_last_name,
+    doctorEmail: row.doctor_email,
     startsAt: new Date(row.starts_at),
     endsAt: new Date(row.ends_at),
   };
@@ -130,6 +134,8 @@ function mapAppointmentDetailRow(row: StaffAppointmentRow): AppointmentDetailRec
   return {
     ...mapStaffAppointmentRow(row),
     doctorSpecialty: row.doctor_specialty ?? undefined,
+    patientEmail: row.patient_email,
+    doctorEmail: row.doctor_email,
   };
 }
 
@@ -437,8 +443,8 @@ export async function listAllAppointmentsWithProfiles(): Promise<StaffAppointmen
   const [rows] = await mysqlPool.query<StaffAppointmentRow[]>(`
     SELECT 
       rv.*,
-      up.first_name as patient_first_name, up.last_name as patient_last_name,
-      ud.first_name as doctor_first_name, ud.last_name as doctor_last_name,
+      up.first_name as patient_first_name, up.last_name as patient_last_name, up.email as patient_email,
+      ud.first_name as doctor_first_name, ud.last_name as doctor_last_name, ud.email as doctor_email,
       cd.starts_at, cd.ends_at,
       NULL as doctor_specialty
     FROM rendezvous rv
@@ -458,10 +464,10 @@ export async function getAppointmentDetailById(id: string): Promise<AppointmentD
   const [rows] = await mysqlPool.query<StaffAppointmentRow[]>(`
     SELECT 
       rv.*,
-      up.first_name as patient_first_name, up.last_name as patient_last_name,
-      ud.first_name as doctor_first_name, ud.last_name as doctor_last_name,
+      up.first_name as patient_first_name, up.last_name as patient_last_name, up.email as patient_email,
+      ud.first_name as doctor_first_name, ud.last_name as doctor_last_name, ud.email as doctor_email,
       cd.starts_at, cd.ends_at,
-      pm.specialite as doctor_specialty
+      pm.specialty as doctor_specialty
     FROM rendezvous rv
     INNER JOIN profils_patients pp ON pp.id = rv.patient_id
     INNER JOIN utilisateurs up ON up.id = pp.user_id

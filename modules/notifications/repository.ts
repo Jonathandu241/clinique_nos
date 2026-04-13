@@ -1,45 +1,68 @@
-/// Repository pour la gestion des événements de notification en base de données.
-import { prisma } from "@/lib/db/prisma";
+/// Repository pour la gestion des événements de notification en base de données via MySQL2.
+import { mysqlPool } from "../../lib/db/mysql";
 import { NotificationChannel, NotificationStatus, CreateNotificationInput } from "./types";
+import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 /// Crée une nouvelle entrée de notification dans la table evenements_notification.
-/// @param data Les données d'entrée pour la création de la notification.
 export async function createNotificationLog(data: CreateNotificationInput) {
-  return await prisma.notificationEvent.create({
-    data: {
-      appointmentId: data.appointmentId,
-      template: data.template,
-      channel: data.channel,
-      recipient: data.recipient,
-      status: data.status || NotificationStatus.pending,
-    },
-  });
+  const id = crypto.randomUUID();
+  
+  await mysqlPool.query(
+    `
+    INSERT INTO evenements_notification (
+      id, appointment_id, template, channel, recipient, status, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+    `,
+    [
+      id,
+      data.appointmentId,
+      data.template,
+      data.channel,
+      data.recipient,
+      data.status || NotificationStatus.pending
+    ]
+  );
+
+  return { id, ...data };
 }
 
 /// Met à jour le statut d'une notification existante.
-/// @param id L'identifiant de la notification.
-/// @param status Le nouveau statut (sent, failed).
-/// @param providerReference La référence optionnelle du fournisseur externe.
 export async function updateNotificationStatus(
   id: string,
   status: NotificationStatus,
   providerReference?: string
 ) {
-  return await prisma.notificationEvent.update({
-    where: { id },
-    data: {
+  await mysqlPool.query(
+    `
+    UPDATE evenements_notification
+    SET 
+      status = ?,
+      provider_reference = ?,
+      sent_at = ?,
+      updated_at = NOW()
+    WHERE id = ?
+    `,
+    [
       status,
-      providerReference,
-      sentAt: status === NotificationStatus.sent ? new Date() : undefined,
-    },
-  });
+      providerReference || null,
+      status === NotificationStatus.sent ? new Date() : null,
+      id
+    ]
+  );
+  
+  return true;
 }
 
 /// Récupère l'historique des notifications pour un rendez-vous.
-/// @param appointmentId L'identifiant du rendez-vous.
 export async function getNotificationsByAppointmentId(appointmentId: string) {
-  return await prisma.notificationEvent.findMany({
-    where: { appointmentId },
-    orderBy: { createdAt: "desc" },
-  });
+  const [rows] = await mysqlPool.query<RowDataPacket[]>(
+    `
+    SELECT * FROM evenements_notification 
+    WHERE appointment_id = ? 
+    ORDER BY created_at DESC
+    `,
+    [appointmentId]
+  );
+  
+  return rows;
 }

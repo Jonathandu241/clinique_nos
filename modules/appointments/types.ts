@@ -79,8 +79,10 @@ export type PatientProfileRecord = {
 export type StaffAppointmentRecord = AppointmentRecord & {
   patientFirstName: string;
   patientLastName: string;
+  patientEmail: string;
   doctorFirstName: string;
   doctorLastName: string;
+  doctorEmail: string;
   startsAt: Date;
   endsAt: Date;
 };
@@ -88,6 +90,8 @@ export type StaffAppointmentRecord = AppointmentRecord & {
 /// Représentation complète d'un rendez-vous pour la vue détail.
 export type AppointmentDetailRecord = StaffAppointmentRecord & {
   doctorSpecialty?: string;
+  patientEmail?: string;
+  doctorEmail?: string;
 };
 
 /// Etat reutilisable pour les actions de reservation patient.

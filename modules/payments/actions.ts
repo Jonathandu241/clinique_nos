@@ -33,6 +33,10 @@ export async function confirmFakePayment(appointmentId: string) {
   const result = await processFakePayment(appointmentId);
 
   if (result.success) {
+    // Déclenchement de la notification (Simulation asynchrone)
+    const { notifyAppointmentConfirmed } = await import("../notifications/events");
+    notifyAppointmentConfirmed(appointmentId).catch(console.error);
+
     // 5. Revalider les caches pour mettre à jour les dashboards et listes.
     revalidatePath(`/patient/appointments/${appointmentId}`);
     revalidatePath("/patient/appointments");

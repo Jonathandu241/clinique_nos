@@ -1,7 +1,16 @@
 /// Fichier définissant les types et interfaces pour le module de notifications.
-import { NotificationChannel, NotificationStatus } from "@prisma/client";
 
-export { NotificationChannel, NotificationStatus };
+export enum NotificationChannel {
+  email = "email",
+  sms = "sms",
+  whatsapp = "whatsapp",
+}
+
+export enum NotificationStatus {
+  pending = "pending",
+  sent = "sent",
+  failed = "failed",
+}
 
 /// Interface pour la création d'une nouvelle notification.
 export interface CreateNotificationInput {
