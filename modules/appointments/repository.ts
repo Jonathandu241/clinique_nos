@@ -8,6 +8,8 @@ import type {
   AppointmentRecord,
   OpenAppointmentSlotRecord,
   PatientProfileRecord,
+  StaffAppointmentRecord,
+  AppointmentDetailRecord,
 } from "./types";
 
 type AppointmentSlotRow = RowDataPacket & {
@@ -45,6 +47,16 @@ type AppointmentRow = RowDataPacket & {
 type PatientProfileRow = RowDataPacket & {
   id: string;
   user_id: string;
+};
+
+type StaffAppointmentRow = AppointmentRow & {
+  patient_first_name: string;
+  patient_last_name: string;
+  doctor_first_name: string;
+  doctor_last_name: string;
+  starts_at: Date;
+  ends_at: Date;
+  doctor_specialty: string | null;
 };
 
 /// Convertit une ligne SQL de creneau vers le format du domaine.
@@ -97,6 +109,27 @@ function mapPatientProfileRow(row: PatientProfileRow): PatientProfileRecord {
   return {
     id: row.id,
     userId: row.user_id,
+  };
+}
+
+/// Convertit une ligne SQL enrichie vers le format StaffAppointmentRecord.
+function mapStaffAppointmentRow(row: StaffAppointmentRow): StaffAppointmentRecord {
+  return {
+    ...mapAppointmentRow(row),
+    patientFirstName: row.patient_first_name,
+    patientLastName: row.patient_last_name,
+    doctorFirstName: row.doctor_first_name,
+    doctorLastName: row.doctor_last_name,
+    startsAt: new Date(row.starts_at),
+    endsAt: new Date(row.ends_at),
+  };
+}
+
+/// Convertit une ligne SQL enrichie vers le format AppointmentDetailRecord.
+function mapAppointmentDetailRow(row: StaffAppointmentRow): AppointmentDetailRecord {
+  return {
+    ...mapStaffAppointmentRow(row),
+    doctorSpecialty: row.doctor_specialty ?? undefined,
   };
 }
 
@@ -397,4 +430,51 @@ export async function reserveAvailabilitySlot(
       activeConnection.release();
     }
   }
+}
+
+/// Liste tous les rendez-vous avec les noms des patients et médecins (pour le staff).
+export async function listAllAppointmentsWithProfiles(): Promise<StaffAppointmentRecord[]> {
+  const [rows] = await mysqlPool.query<StaffAppointmentRow[]>(`
+    SELECT 
+      rv.*,
+      up.first_name as patient_first_name, up.last_name as patient_last_name,
+      ud.first_name as doctor_first_name, ud.last_name as doctor_last_name,
+      cd.starts_at, cd.ends_at,
+      NULL as doctor_specialty
+    FROM rendezvous rv
+    INNER JOIN profils_patients pp ON pp.id = rv.patient_id
+    INNER JOIN utilisateurs up ON up.id = pp.user_id
+    INNER JOIN profils_medecins pm ON pm.id = rv.doctor_id
+    INNER JOIN utilisateurs ud ON ud.id = pm.user_id
+    INNER JOIN creneaux_disponibilite cd ON cd.id = rv.availability_slot_id
+    ORDER BY cd.starts_at DESC
+  `);
+
+  return rows.map(mapStaffAppointmentRow);
+}
+
+/// Récupère les détails enrichis d'un rendez-vous par son ID.
+export async function getAppointmentDetailById(id: string): Promise<AppointmentDetailRecord | null> {
+  const [rows] = await mysqlPool.query<StaffAppointmentRow[]>(`
+    SELECT 
+      rv.*,
+      up.first_name as patient_first_name, up.last_name as patient_last_name,
+      ud.first_name as doctor_first_name, ud.last_name as doctor_last_name,
+      cd.starts_at, cd.ends_at,
+      pm.specialite as doctor_specialty
+    FROM rendezvous rv
+    INNER JOIN profils_patients pp ON pp.id = rv.patient_id
+    INNER JOIN utilisateurs up ON up.id = pp.user_id
+    INNER JOIN profils_medecins pm ON pm.id = rv.doctor_id
+    INNER JOIN utilisateurs ud ON ud.id = pm.user_id
+    INNER JOIN creneaux_disponibilite cd ON cd.id = rv.availability_slot_id
+    WHERE rv.id = ?
+    LIMIT 1
+  `, [id]);
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return mapAppointmentDetailRow(rows[0]);
 }

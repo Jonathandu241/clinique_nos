@@ -75,6 +75,21 @@ export type PatientProfileRecord = {
   userId: string;
 };
 
+/// Représentation d'un rendez-vous avec informations patients et médecins pour le staff.
+export type StaffAppointmentRecord = AppointmentRecord & {
+  patientFirstName: string;
+  patientLastName: string;
+  doctorFirstName: string;
+  doctorLastName: string;
+  startsAt: Date;
+  endsAt: Date;
+};
+
+/// Représentation complète d'un rendez-vous pour la vue détail.
+export type AppointmentDetailRecord = StaffAppointmentRecord & {
+  doctorSpecialty?: string;
+};
+
 /// Etat reutilisable pour les actions de reservation patient.
 export type CreateAppointmentReservationActionState = {
   status: "idle" | "success" | "error";
