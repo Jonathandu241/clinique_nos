@@ -50,6 +50,16 @@ export async function createAppointmentReservationAction(
   try {
     const reservationResult = await reserveAppointment(parsedInput.data, session.id);
 
+    // Audit de réservation
+    const { auditService } = await import("../audit/service");
+    auditService.log({
+      entityType: "appointment",
+      entityId: reservationResult.appointment.id,
+      action: "BOOKED",
+      actorUserId: session.id,
+      metadata: { slotId: parsedInput.data.availabilitySlotId }
+    }).catch(console.error);
+
     // Déclenchement de la notification (Simulation asynchrone)
     const { notifyPatientReservationPending } = await import("../notifications/events");
     notifyPatientReservationPending(reservationResult.appointment.id).catch(console.error);

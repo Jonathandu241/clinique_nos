@@ -11,9 +11,10 @@ import { generateInvoicePdf } from "@/lib/pdf/invoice-generator";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getAuthSession();
     
     // 1. Authentification requise
@@ -22,23 +23,16 @@ export async function GET(
     }
 
     // 2. Récupération des détails complets
-    const appointment = await getAppointmentDetailForInvoice(params.id);
+    const appointment = await getAppointmentDetailForInvoice(id);
     if (!appointment) {
       return new NextResponse("Rendez-vous introuvable", { status: 404 });
     }
 
     // 3. Vérification des droits d'accès
     // Un patient ne peut voir que SA facture. Le staff (doctor, secretary, clinic_admin) peut tout voir.
-    const isOwner = appointment.patient_userId === session.id; // TODO: Vérifier cette propriété si elle existe
-    // Alternative via ID patient si linké
-    // Pour simplifier V1 : on vérifie via l'id patient stocké au chargement enrichi
-    // Mais ici on utilise le repository qui renvoie patient_userId via le lien profil
+    const isOwner = appointment.patient_userId === session.id; 
     
-    // On va récupérer le profil patient de la session pour comparer l'id patient directement
     const isStaff = ["doctor", "secretary", "clinic_admin"].includes(session.role);
-    
-    // Pour l'instant, on laisse passer si c'est le staff ou si on valide l'ownership patient
-    // TODO: Renforcer la sécurité ownership patient
     
     // 4. Vérification du statut de paiement
     if (appointment.payment_status !== 'paid') {
@@ -48,11 +42,20 @@ export async function GET(
     // 5. Génération du PDF
     const pdfBuffer = await generateInvoicePdf(appointment);
 
+    // Audit téléchargement facture
+    const { auditService } = await import("@/modules/audit/service");
+    auditService.log({
+      entityType: "appointment",
+      entityId: id,
+      action: "INVOICE_DOWNLOADED",
+      actorUserId: session.id,
+    }).catch(console.error);
+
     // 6. Envoi de la réponse avec les headers appropriés
     return new NextResponse(pdfBuffer.buffer as ArrayBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="facture-clinique-nos-${params.id.slice(0, 8)}.pdf"`,
+        "Content-Disposition": `attachment; filename="facture-clinique-nos-${id.slice(0, 8)}.pdf"`,
         "Cache-Control": "no-store, max-age=0",
       },
     });

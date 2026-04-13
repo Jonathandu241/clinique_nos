@@ -33,6 +33,16 @@ export async function confirmFakePayment(appointmentId: string) {
   const result = await processFakePayment(appointmentId);
 
   if (result.success) {
+    // Audit paiement
+    const { auditService } = await import("../audit/service");
+    auditService.log({
+      entityType: "payment",
+      entityId: appointmentId,
+      action: "PAYMENT_CONFIRMED",
+      actorUserId: profile.id,
+      metadata: { method: "fake_payment" }
+    }).catch(console.error);
+
     // Déclenchement de la notification (Simulation asynchrone)
     const { notifyAppointmentConfirmed } = await import("../notifications/events");
     notifyAppointmentConfirmed(appointmentId).catch(console.error);
