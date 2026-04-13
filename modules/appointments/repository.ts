@@ -589,3 +589,79 @@ export async function getAppointmentsNeedingReminder(minutesBeforeDue: number = 
 
   return rows;
 }
+
+/**
+ * Annule un rendez-vous (action Staff) et libère le créneau associé.
+ */
+export async function cancelAppointmentTransaction(
+  appointmentId: string, 
+  slotId: string, 
+  reason: string
+): Promise<boolean> {
+  const connection = await mysqlPool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    // 1. Marquer le rdv comme annulé par le staff
+    await connection.query(
+      "UPDATE rendezvous SET status = 'cancelled_by_staff', cancellation_reason = ?, updated_at = NOW() WHERE id = ?",
+      [reason, appointmentId]
+    );
+
+    // 2. Libérer le créneau
+    await connection.query(
+      "UPDATE creneaux_disponibilite SET status = 'open', updated_at = NOW() WHERE id = ?",
+      [slotId]
+    );
+
+    await connection.commit();
+    return true;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Déplace un rendez-vous vers un nouveau créneau.
+ */
+export async function rescheduleAppointmentTransaction(
+  appointmentId: string,
+  oldSlotId: string,
+  newSlotId: string
+): Promise<boolean> {
+  const connection = await mysqlPool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    // 1. Libérer l'ancien créneau
+    await connection.query(
+      "UPDATE creneaux_disponibilite SET status = 'open', updated_at = NOW() WHERE id = ?",
+      [oldSlotId]
+    );
+
+    // 2. Réserver le nouveau créneau
+    await connection.query(
+      "UPDATE creneaux_disponibilite SET status = 'booked', updated_at = NOW() WHERE id = ?",
+      [newSlotId]
+    );
+
+    // 3. Mettre à jour le rendez-vous
+    await connection.query(
+      "UPDATE rendezvous SET availability_slot_id = ?, updated_at = NOW() WHERE id = ?",
+      [newSlotId, appointmentId]
+    );
+
+    await connection.commit();
+    return true;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}

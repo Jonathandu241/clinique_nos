@@ -6,6 +6,7 @@ import { AppointmentStatusBadge } from "@/components/appointments/appointment-st
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, User, Stethoscope, Clock, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
+import { StaffAppointmentActionsClient } from "./appointment-actions-client";
 
 interface StaffAppointmentDetailPageProps {
   params: Promise<{ id: string }>;
@@ -106,7 +107,7 @@ export default async function StaffAppointmentDetailPage({ params }: StaffAppoin
 
         {/* Panneau d'Actions Staff */}
         <aside className="space-y-6">
-           <section className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-200 space-y-6">
+            <section className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-200 space-y-6">
               <h3 className="font-bold text-lg border-b border-white/10 pb-4">Actions de gestion</h3>
               
               <div className="space-y-3">
@@ -114,12 +115,14 @@ export default async function StaffAppointmentDetailPage({ params }: StaffAppoin
                     <CheckCircle2 size={18} />
                     Confirmer
                  </button>
-                 <button className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 py-3 rounded-2xl font-bold transition-all active:scale-95">
+                 
+                 <StaffAppointmentActionsClient 
+                    appointmentId={appointment.id} 
+                    status={appointment.status} 
+                 />
+
+                 <button className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 py-3 rounded-2xl font-bold transition-all">
                     Consulter le dossier
-                 </button>
-                 <button className="w-full flex items-center justify-center gap-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 py-3 rounded-2xl font-bold transition-all">
-                    <XCircle size={18} />
-                    Annuler
                  </button>
               </div>
            </section>

@@ -107,3 +107,31 @@ export async function notifyPatientPaymentReminder(appointmentId: string) {
     content: template.body
   });
 }
+
+/**
+ * Notifie le patient que son rendez-vous a été annulé par le staff.
+ */
+export async function notifyPatientCancelledByStaff(appointmentId: string, reason: string) {
+  const app = await getAppointmentDetailById(appointmentId);
+  if (!app) return;
+
+  const startDate = new Date(app.startsAt);
+  const details = {
+    id: app.id,
+    doctorName: `${app.doctorFirstName} ${app.doctorLastName}`,
+    patientName: `${app.patientFirstName} ${app.patientLastName}`,
+    date: startDate.toLocaleDateString("fr-FR"),
+    time: startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+    reason
+  };
+
+  const template = NotificationTemplates.PATIENT_CANCELLED_BY_STAFF(details);
+
+  return await sendNotification({
+    appointmentId: app.id,
+    template: template.template,
+    channel: NotificationChannel.email,
+    recipient: app.patientEmail || "patient@example.com",
+    content: template.body
+  });
+}
