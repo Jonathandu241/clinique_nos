@@ -75,6 +75,8 @@ export type AppointmentRecord = {
 export type PatientProfileRecord = {
   id: string;
   userId: string;
+  firstName?: string;
+  lastName?: string;
 };
 
 /// Représentation d'un rendez-vous avec informations patients et médecins pour le staff.
