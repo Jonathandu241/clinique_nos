@@ -49,7 +49,7 @@ export async function GET(
     const pdfBuffer = await generateInvoicePdf(appointment);
 
     // 6. Envoi de la réponse avec les headers appropriés
-    return new NextResponse(pdfBuffer as Uint8Array, {
+    return new NextResponse(pdfBuffer.buffer as ArrayBuffer, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="facture-clinique-nos-${params.id.slice(0, 8)}.pdf"`,
