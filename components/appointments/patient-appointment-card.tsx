@@ -1,6 +1,6 @@
 /// Composant carte pour afficher un rendez-vous côté patient.
 
-import { Calendar, Clock, MapPin, CreditCard, ChevronRight, Stethoscope } from "lucide-react";
+import { Calendar, Clock, MapPin, CreditCard, ChevronRight, Stethoscope, FileText } from "lucide-react";
 import { AppointmentStatusBadge } from "./appointment-status-badge";
 import Link from "next/link";
 import { clsx } from "clsx";
@@ -18,6 +18,7 @@ export function PatientAppointmentCard({ appointment }: { appointment: any }) {
   
   // Logique de paiement
   const needsPayment = appointment.paymentStatus === "unpaid" && appointment.status === "pending";
+  const isPaid = appointment.paymentStatus === "paid";
 
   return (
     <div className={clsx(
@@ -58,37 +59,49 @@ export function PatientAppointmentCard({ appointment }: { appointment: any }) {
         </div>
 
         {/* Footer : Paiement et Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+        <div className="flex flex-wrap items-center justify-between pt-4 border-t border-slate-50 gap-4">
           <div className="flex items-center gap-2">
             <CreditCard size={14} className={clsx(
-              appointment.paymentStatus === "paid" ? "text-emerald-500" : "text-slate-300"
+              isPaid ? "text-emerald-500" : "text-slate-300"
             )} />
             <span className={clsx(
               "text-[10px] font-black uppercase tracking-widest",
-              appointment.paymentStatus === "paid" ? "text-emerald-600" : "text-slate-400"
+              isPaid ? "text-emerald-600" : "text-slate-400"
             )}>
-              {appointment.paymentStatus === "paid" ? "Payé" : "En attente"}
+              {isPaid ? "Payé" : "En attente"}
             </span>
           </div>
 
-          {!isPast && (
-            <div className="flex items-center gap-2">
-              {needsPayment && (
-                <Link 
-                  href={`/patient/appointments/${appointment.id}/pay`}
-                  className="bg-emerald-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors uppercase"
-                >
-                  Payer
-                </Link>
-              )}
+          <div className="flex items-center gap-2 ml-auto">
+            {isPaid && (
+              <a 
+                href={`/api/appointments/${appointment.id}/invoice`}
+                className="flex items-center gap-2 text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl hover:bg-emerald-100 transition-colors uppercase border border-emerald-100/50"
+                download
+              >
+                <FileText size={12} />
+                Facture PDF
+              </a>
+            )}
+            
+            {!isPast && needsPayment && (
+              <Link 
+                href={`/patient/appointments/${appointment.id}/pay`}
+                className="bg-emerald-500 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors uppercase"
+              >
+                Payer
+              </Link>
+            )}
+
+            {!isPast && (
               <Link 
                 href={`/patient/appointments/${appointment.id}`}
-                className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
+                className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all border border-slate-100/50"
               >
                 <ChevronRight size={18} />
               </Link>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

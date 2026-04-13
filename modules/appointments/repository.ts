@@ -693,3 +693,28 @@ export async function getAppointmentsByPatientId(patientId: string) {
   );
   return rows;
 }
+
+/**
+ * Récupère les détails enrichis d'un rendez-vous pour la génération de facture.
+ */
+export async function getAppointmentDetailForInvoice(appointmentId: string) {
+  const [rows] = await mysqlPool.query<any[]>(
+    `SELECT 
+      rv.*, 
+      u_doc.first_name as doctorFirstName, u_doc.last_name as doctorLastName,
+      dp.specialty as doctorSpecialty,
+      u_pat.first_name as patientFirstName, u_pat.last_name as patientLastName,
+      u_pat.email as patientEmail,
+      cd.starts_at as startsAt
+    FROM rendezvous rv
+    JOIN profils_medecins dp ON rv.doctor_id = dp.id
+    JOIN utilisateurs u_doc ON dp.user_id = u_doc.id
+    JOIN profils_patients pp ON rv.patient_id = pp.id
+    JOIN utilisateurs u_pat ON pp.user_id = u_pat.id
+    JOIN creneaux_disponibilite cd ON rv.availability_slot_id = cd.id
+    WHERE rv.id = ?
+    LIMIT 1`,
+    [appointmentId]
+  );
+  return rows[0] || null;
+}
