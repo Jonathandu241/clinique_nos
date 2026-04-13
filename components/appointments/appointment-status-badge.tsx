@@ -16,6 +16,14 @@ const STATUS_CONFIG: Record<Status, { label: string; className: string }> = {
     label: "Annulé", 
     className: "bg-rose-50 text-rose-700 border-rose-200" 
   },
+  cancelled_by_staff: { 
+    label: "Annulé (Clinique)", 
+    className: "bg-rose-50 text-rose-700 border-rose-200" 
+  },
+  cancelled_by_patient: { 
+    label: "Annulé (Patient)", 
+    className: "bg-rose-50 text-rose-700 border-rose-200" 
+  },
   completed: { 
     label: "Terminé", 
     className: "bg-slate-50 text-slate-700 border-slate-200" 

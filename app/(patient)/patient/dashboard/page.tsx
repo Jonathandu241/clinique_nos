@@ -1,118 +1,101 @@
-/// Page de tableau de bord pour le patient.
-import { requirePatientAccess } from "@/lib/auth/permissions";
-import { getPatientProfileByUserId, listAppointmentsByPatientId } from "@/modules/appointments/repository";
-import { Container } from "@/components/ui/container";
-import { AppointmentStatusBadge } from "@/components/appointments/appointment-status-badge";
-import Link from "next/link";
-import { Calendar, ChevronRight, PlusCircle } from "lucide-react";
-import { redirect } from "next/navigation";
+/// Page de tableau de bord principal pour le patient.
 
-/**
- * Dashboard principal affichant les rendez-vous récents et les actions rapides.
- */
+import { requirePatientAccess } from "@/lib/auth/permissions";
+import { getAppointmentsByPatientId, getPatientProfileByUserId } from "@/modules/appointments/repository";
+import { Container } from "@/components/ui/container";
+import { PatientAppointmentList } from "@/components/appointments/patient-appointment-list";
+import { notFound, redirect } from "next/navigation";
+import { Calendar, UserCircle, Activity, Sparkles } from "lucide-react";
+
 export default async function PatientDashboardPage() {
   const session = await requirePatientAccess();
   
-  // Récupère le profil patient lié à l'utilisateur connecté.
-  const profile = await getPatientProfileByUserId(session.id);
-  
-  // Si aucun profil patient n'est trouvé, redirige par sécurité.
-  if (!profile) {
-    redirect("/");
+  // Récupération du profil métier pour avoir l'ID patient
+  const patientProfile = await getPatientProfileByUserId(session.id);
+
+  if (!patientProfile) {
+    // Si pas de profil, on redirige vers une éventuelle complétion ou on affiche une erreur
+    // Pour Clinique NOS, un patient authentifié DEVRAIT avoir un profil.
+    return (
+      <Container className="py-24 text-center">
+        <UserCircle size={64} className="mx-auto text-slate-200 mb-6" />
+        <h1 className="text-2xl font-bold text-slate-900">Profil patient introuvable</h1>
+        <p className="text-slate-500 mt-2">Veuillez contacter le support administratif de la clinique.</p>
+      </Container>
+    );
   }
 
-  // Liste tous les rendez-vous du patient.
-  const appointments = await listAppointmentsByPatientId(profile.id);
+  const appointments = await getAppointmentsByPatientId(patientProfile.id);
+  
+  // Statistiques rapides
+  const now = new Date();
+  const upcomingCount = appointments.filter(a => new Date(a.startsAt) >= now).length;
+  const nextAppointment = appointments.find(a => new Date(a.startsAt) >= now);
 
   return (
-    <Container className="py-12 space-y-10">
-      <header className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Espace Patient</h1>
-          <p className="text-slate-500 mt-1">Gérez vos rendez-vous et votre suivi médical.</p>
+    <Container className="py-12 max-w-7xl">
+      <header className="mb-12 space-y-2">
+        <div className="flex items-center gap-3 text-emerald-600 mb-2">
+          <Sparkles size={20} className="animate-pulse" />
+          <span className="text-xs font-black uppercase tracking-[0.3em]">Tableau de bord</span>
         </div>
-        <Link 
-          href="/patient/book" 
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-full font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
-        >
-          <PlusCircle size={18} />
-          Prendre rendez-vous
-        </Link>
+        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+          Bienvenue, {patientProfile.firstName || "Cher Patient"}
+        </h1>
+        <p className="text-slate-500 font-medium italic">Votre santé, notre priorité absolue.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Résumé rapide */}
-        <div className="md:col-span-2 space-y-6">
-          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-              <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                <Calendar size={18} className="text-emerald-600" />
-                Derniers rendez-vous
-              </h2>
+      {/* Résumé Statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-slate-200 relative overflow-hidden group">
+          <Activity className="absolute -right-4 -bottom-4 h-32 w-32 text-white/5 group-hover:scale-110 transition-transform duration-500" />
+          <div className="relative z-10 space-y-4">
+            <p className="text-xs font-bold text-white/50 uppercase tracking-widest">Suivi d'activité</p>
+            <div>
+               <p className="text-4xl font-black">{appointments.length}</p>
+               <p className="text-sm font-medium text-white/70">Séances au total</p>
             </div>
-
-            {appointments.length === 0 ? (
-              <div className="p-10 text-center space-y-3">
-                <p className="text-slate-500">Vous n&apos;avez pas encore de rendez-vous programmé.</p>
-                <Link href="/patient/book" className="text-emerald-600 hover:underline font-medium">
-                  Réserver un créneau dès maintenant
-                </Link>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {appointments.slice(0, 5).map((app) => (
-                  <Link 
-                    key={app.id} 
-                    href={`/patient/appointments/${app.id}`}
-                    className="flex items-center justify-between p-6 hover:bg-slate-50 transition-colors group"
-                  >
-                    <div className="space-y-1">
-                      <p className="font-semibold text-slate-900">
-                        {new Date(app.bookedAt).toLocaleDateString('fr-FR', { 
-                          weekday: 'long', 
-                          day: 'numeric', 
-                          month: 'long' 
-                        })}
-                      </p>
-                      <p className="text-sm text-slate-500">Réf: {app.id.slice(0, 8).toUpperCase()}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <AppointmentStatusBadge status={app.status} />
-                      <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-            
-            {appointments.length > 5 && (
-              <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <Link href="/patient/appointments" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
-                  Voir tout l&apos;historique
-                </Link>
-              </div>
-            )}
-          </section>
+          </div>
         </div>
 
-        {/* Aide / Informations */}
-        <aside className="space-y-6">
-          <div className="bg-emerald-600 rounded-2xl p-6 text-white shadow-lg shadow-emerald-200/50">
-            <h3 className="font-bold text-lg mb-2">Besoin d&apos;aide ?</h3>
-            <p className="text-emerald-50 text-sm leading-relaxed mb-4">
-              En cas d&apos;urgence, veuillez contacter le secrétariat directement ou appeler le 15.
-            </p>
-            <button className="w-full bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border border-white/30 py-2 rounded-xl transition-colors font-medium text-sm">
-              Nous contacter
-            </button>
+        <div className="bg-emerald-500 rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-200 relative overflow-hidden group">
+          <Calendar className="absolute -right-4 -bottom-4 h-32 w-32 text-white/10 group-hover:scale-110 transition-transform duration-500" />
+          <div className="relative z-10 space-y-4">
+            <p className="text-xs font-bold text-white/60 uppercase tracking-widest">Prochains soins</p>
+            <div>
+               <p className="text-4xl font-black">{upcomingCount}</p>
+               <p className="text-sm font-medium text-white/80">Rendez-vous à venir</p>
+            </div>
           </div>
-          
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4 text-sm uppercase tracking-wider">Vos documents</h3>
-            <p className="text-slate-400 text-sm italic">Bientôt disponible : accédez à vos comptes-rendus ici.</p>
-          </div>
-        </aside>
+        </div>
+
+        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden group">
+           <div className="relative z-10 space-y-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ma prochaine visite</p>
+              {nextAppointment ? (
+                <div className="space-y-1">
+                   <p className="text-lg font-black text-slate-900 leading-tight">
+                     Dr {nextAppointment.doctorFirstName} {nextAppointment.doctorLastName}
+                   </p>
+                   <p className="text-sm font-bold text-emerald-600">
+                     Le {new Date(nextAppointment.startsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                   </p>
+                </div>
+              ) : (
+                <p className="text-slate-400 text-sm italic font-medium">Aucun rendez-vous prévu</p>
+              )}
+           </div>
+        </div>
       </div>
+
+      <section className="space-y-10">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-6">
+           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Mes Rendez-vous</h2>
+           <Activity size={24} className="text-emerald-500/20" />
+        </div>
+        
+        <PatientAppointmentList appointments={appointments} />
+      </section>
     </Container>
   );
 }

@@ -47,6 +47,8 @@ type AppointmentRow = RowDataPacket & {
 type PatientProfileRow = RowDataPacket & {
   id: string;
   user_id: string;
+  first_name?: string;
+  last_name?: string;
 };
 
 type StaffAppointmentRow = AppointmentRow & {
@@ -111,6 +113,8 @@ function mapPatientProfileRow(row: PatientProfileRow): PatientProfileRecord {
   return {
     id: row.id,
     userId: row.user_id,
+    firstName: row.first_name,
+    lastName: row.last_name,
   };
 }
 
@@ -216,10 +220,13 @@ export async function getPatientProfileByUserId(userId: string): Promise<Patient
   const [rows] = await mysqlPool.query<PatientProfileRow[]>(
     `
       SELECT
-        id,
-        user_id
-      FROM profils_patients
-      WHERE user_id = ?
+        p.id,
+        p.user_id,
+        u.first_name,
+        u.last_name
+      FROM profils_patients p
+      JOIN utilisateurs u ON p.user_id = u.id
+      WHERE p.user_id = ?
       LIMIT 1
     `,
     [userId],
@@ -664,4 +671,25 @@ export async function rescheduleAppointmentTransaction(
   } finally {
     connection.release();
   }
+}
+
+/**
+ * Récupère tous les rendez-vous d'un patient avec les détails médecin.
+ */
+export async function getAppointmentsByPatientId(patientId: string) {
+  const [rows] = await mysqlPool.query<any[]>(
+    `SELECT 
+      rv.*, 
+      u.first_name as doctorFirstName, u.last_name as doctorLastName,
+      dp.specialty as doctorSpecialty,
+      cd.starts_at as startsAt, cd.ends_at as endsAt
+    FROM rendezvous rv
+    JOIN profils_medecins dp ON rv.doctor_id = dp.id
+    JOIN utilisateurs u ON dp.user_id = u.id
+    JOIN creneaux_disponibilite cd ON rv.availability_slot_id = cd.id
+    WHERE rv.patient_id = ?
+    ORDER BY cd.starts_at DESC`,
+    [patientId]
+  );
+  return rows;
 }
