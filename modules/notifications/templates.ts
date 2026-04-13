@@ -59,5 +59,20 @@ Date : ${details.date}
 Heure : ${details.time}
 
 Vous pouvez consulter votre planning complet sur votre tableau de bord staff.`
+  }),
+
+  /**
+   * Rappel de paiement avant expiration (ex: 1h avant).
+   */
+  PATIENT_PAYMENT_REMINDER: (details: AppointmentDetails & { minutesLeft: number }) => ({
+    template: "patient_payment_reminder",
+    subject: "Rappel : Votre rendez-vous expire bientôt - Clinique NOS",
+    body: `Bonjour ${details.patientName},
+
+Ceci est un rappel concernant votre rendez-vous avec le Dr ${details.doctorName} prévu le ${details.date} à ${details.time}.
+
+Il vous reste environ ${details.minutesLeft} minutes pour effectuer votre paiement sécurisé. Passé ce délai, votre créneau sera automatiquement libéré et rendu disponible pour d'autres patients.
+
+Référence : ${details.id.toUpperCase()}`
   })
 };

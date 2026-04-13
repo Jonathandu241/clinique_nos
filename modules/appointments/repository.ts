@@ -512,3 +512,80 @@ export async function updateAppointmentPaymentStatus(
 
   return result.affectedRows === 1;
 }
+
+/**
+ * Identifie et expire tous les rendez-vous impayés dont l'échéance est dépassée.
+ * Libère les créneaux (status 'open') pour les rendre à nouveau réservables.
+ * 
+ * @returns Le nombre de rendez-vous ainsi expirés.
+ */
+export async function expireUnpaidAppointments(): Promise<number> {
+  const connection = await mysqlPool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    // 1. Trouver les IDs des rendez-vous à expirer
+    const [expiredApps] = await connection.query<any[]>(
+      `
+      SELECT id, availability_slot_id 
+      FROM rendezvous 
+      WHERE payment_status = 'unpaid' 
+        AND status = 'pending'
+        AND payment_due_at < NOW()
+      `
+    );
+
+    if (expiredApps.length === 0) {
+      await connection.rollback();
+      return 0;
+    }
+
+    const appIds = expiredApps.map(a => a.id);
+    const slotIds = expiredApps.map(a => a.availability_slot_id);
+
+    // 2. Marquer les rendez-vous comme expirés
+    await connection.query(
+      "UPDATE rendezvous SET status = 'expired_unpaid', updated_at = NOW() WHERE id IN (?)",
+      [appIds]
+    );
+
+    // 3. Libérer les créneaux correspondants
+    await connection.query(
+      "UPDATE creneaux_disponibilite SET status = 'open', updated_at = NOW() WHERE id IN (?)",
+      [slotIds]
+    );
+
+    await connection.commit();
+    return expiredApps.length;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Récupère les rendez-vous impayés dont l'échéance est proche (ex: moins de 60 min).
+ * Exclut les rendez-vous ayant déjà reçu une notification de type 'patient_payment_summary'
+ * ou un template spécifique de rappel.
+ */
+export async function getAppointmentsNeedingReminder(minutesBeforeDue: number = 60): Promise<any[]> {
+  const [rows] = await mysqlPool.query<any[]>(
+    `
+    SELECT rv.id, rv.payment_due_at
+    FROM rendezvous rv
+    LEFT JOIN evenements_notification en 
+      ON en.appointment_id = rv.id 
+      AND en.template = 'patient_payment_reminder'
+    WHERE rv.payment_status = 'unpaid'
+      AND rv.status = 'pending'
+      AND rv.payment_due_at BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL ? MINUTE)
+      AND en.id IS NULL
+    `,
+    [minutesBeforeDue]
+  );
+
+  return rows;
+}

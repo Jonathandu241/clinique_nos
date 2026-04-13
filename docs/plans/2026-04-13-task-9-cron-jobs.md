@@ -10,12 +10,12 @@ Ce plan décrit l'automatisation du cycle de vie des rendez-vous, incluant les r
 ## 2. Tâches détaillées
 
 ### 9.1 Infrastructure et Sécurité
-- [ ] Créer `lib/utils/cron-auth.ts` pour valider le header `Authorization: Bearer ${CRON_SECRET}`.
-- [ ] Ajouter `CRON_SECRET` au fichier `.env.example`.
+- [x] Créer `lib/utils/cron-auth.ts` pour valider le header `Authorization: Bearer ${CRON_SECRET}`.
+- [x] Ajouter `CRON_SECRET` au fichier `.env.example`.
 
 ### 9.2 Logique d'Expiration (Repository & Service)
-- [ ] Créer `modules/payments/jobs.ts`.
-- [ ] Implémenter `processExpiredAppointments()` :
+- [x] Créer `modules/payments/jobs.ts`.
+- [x] Implémenter `processExpiredAppointments()` :
     - Trouver les rendez-vous en `payment_status: unpaid` ET `payment_due_at < NOW()`.
     - Exécuter une transaction SQL par rdv :
         1. Mettre à jour `rendezvous` -> `status: expired_unpaid`.
@@ -23,20 +23,20 @@ Ce plan décrit l'automatisation du cycle de vie des rendez-vous, incluant les r
     - Retourner le nombre de rendez-vous expirés pour le log.
 
 ### 9.3 Logique de Rappels (Repository & Service)
-- [ ] Dans `modules/payments/jobs.ts`, implémenter `sendPaymentReminders()` :
+- [x] Dans `modules/payments/jobs.ts`, implémenter `sendPaymentReminders()` :
     - Sélectionner les rdv impayés approchant de l'échéance (ex: moins de 1h restante).
     - Vérifier en base qu'un rappel n'a pas déjà été envoyé pour ce rdv via `evenements_notification`.
     - Appeler le service de notification pour envoyer le rappel.
 
 ### 9.4 Endpoints API (Route Handlers)
-- [ ] Créer `app/api/cron/payment-expirations/route.ts`.
-- [ ] Créer `app/api/cron/payment-reminders/route.ts`.
-- [ ] Intégrer la vérification de sécurité et le logging.
+- [x] Créer `app/api/cron/payment-expirations/route.ts`.
+- [x] Créer `app/api/cron/payment-reminders/route.ts`.
+- [x] Intégrer la vérification de sécurité et le logging.
 
 ### 9.5 Intégration et Tests
-- [ ] Créer `tests/integration/payments/cron-jobs.test.ts`.
-- [ ] Tester le scénario nominal d'expiration (le créneau redevient 'open').
-- [ ] Tester le blocage en cas de secret invalide.
+- [x] Créer `tests/integration/payments/cron-jobs.test.ts`.
+- [x] Tester le scénario nominal d'expiration (le créneau redevient 'open').
+- [x] Tester le blocage en cas de secret invalide.
 
 ## 3. Dépendances
 - Requiert les modules de notifications (Task 8) pour les rappels.

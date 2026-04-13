@@ -67,3 +67,43 @@ export async function notifyAppointmentConfirmed(appointmentId: string) {
     content: doctorTemplate.body
   });
 }
+
+/**
+ * Notifie le patient d'un rappel de paiement imminent.
+ */
+export async function notifyPatientPaymentReminder(appointmentId: string) {
+  const app = await getAppointmentDetailById(appointmentId);
+  if (!app) return;
+
+  const startDate = new Date(app.startsAt);
+  
+  if (!app.paymentDueAt) {
+    console.warn(`[NOTIF] Pas d'échéance de paiement pour le rendez-vous ${appointmentId}`);
+    return;
+  }
+
+  const dueAt = new Date(app.paymentDueAt);
+  const now = new Date();
+  
+  // Calcul approximatif des minutes restantes avant expiration
+  const minutesLeft = Math.max(0, Math.floor((dueAt.getTime() - now.getTime()) / (1000 * 60)));
+
+  const details = {
+    id: app.id,
+    doctorName: `${app.doctorFirstName} ${app.doctorLastName}`,
+    patientName: `${app.patientFirstName} ${app.patientLastName}`,
+    date: startDate.toLocaleDateString("fr-FR"),
+    time: startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+    minutesLeft
+  };
+
+  const template = NotificationTemplates.PATIENT_PAYMENT_REMINDER(details);
+
+  return await sendNotification({
+    appointmentId: app.id,
+    template: template.template,
+    channel: NotificationChannel.email,
+    recipient: app.patientEmail || "patient@example.com",
+    content: template.body
+  });
+}
