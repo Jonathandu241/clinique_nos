@@ -478,3 +478,31 @@ export async function getAppointmentDetailById(id: string): Promise<AppointmentD
 
   return mapAppointmentDetailRow(rows[0]);
 }
+
+/// Met à jour le statut de paiement et confirme le rendez-vous.
+/// Utilisé après un succès de paiement (simulé ou réel).
+export async function updateAppointmentPaymentStatus(
+  id: string,
+  paymentStatus: AppointmentRecord["paymentStatus"]
+): Promise<boolean> {
+  const [result] = await mysqlPool.query<ResultSetHeader>(
+    `
+      UPDATE rendezvous
+      SET 
+        payment_status = ?,
+        status = CASE 
+          WHEN ? = 'paid' THEN 'confirmed' 
+          ELSE status 
+        END,
+        confirmed_at = CASE 
+          WHEN ? = 'paid' THEN NOW() 
+          ELSE confirmed_at 
+        END,
+        updated_at = NOW()
+      WHERE id = ? AND payment_status != 'paid'
+    `,
+    [paymentStatus, paymentStatus, paymentStatus, id]
+  );
+
+  return result.affectedRows === 1;
+}

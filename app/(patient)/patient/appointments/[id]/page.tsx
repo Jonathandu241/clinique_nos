@@ -5,7 +5,7 @@ import { Container } from "@/components/ui/container";
 import { AppointmentStatusBadge } from "@/components/appointments/appointment-status-badge";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Clock, MapPin, User, FileText, Info } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, User, FileText, Info, CreditCard } from "lucide-react";
 
 interface PatientAppointmentDetailPageProps {
   params: Promise<{ id: string }>;
@@ -83,6 +83,20 @@ export default async function PatientAppointmentDetailPage({ params }: PatientAp
               </div>
             </div>
 
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-xl ${appointment.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                  <CreditCard size={24} />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500 font-medium">Statut de paiement</p>
+                  <p className="font-bold text-slate-900 leading-tight mt-1 uppercase text-sm">
+                    {appointment.paymentStatus === 'paid' ? 'Payé' : 'En attente de règlement'}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">Consultation - 60.00 €</p>
+                </div>
+              </div>
+            </div>
+
             <hr className="border-slate-100" />
 
             <div className="space-y-4">
@@ -114,8 +128,17 @@ export default async function PatientAppointmentDetailPage({ params }: PatientAp
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
             <h3 className="font-bold text-slate-900">Actions</h3>
             
+            {appointment.paymentStatus === 'unpaid' && appointment.status === 'pending' && (
+              <Link 
+                href={`/patient/payments/${appointment.id}`}
+                className="w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl transition-all font-bold active:scale-95 shadow-lg shadow-emerald-200 block"
+              >
+                Payer maintenant (60.00 €)
+              </Link>
+            )}
+            
             {appointment.status === 'pending' || appointment.status === 'confirmed' ? (
-              <button className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl transition-all font-semibold active:scale-95 shadow-lg shadow-slate-200">
+              <button className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl transition-all font-semibold active:scale-95">
                 Annuler le rendez-vous
               </button>
             ) : (
