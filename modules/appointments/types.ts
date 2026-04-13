@@ -4,6 +4,8 @@ export type AppointmentStatus =
   | "pending"
   | "confirmed"
   | "cancelled"
+  | "cancelled_by_staff"
+  | "cancelled_by_patient"
   | "completed"
   | "expired_unpaid";
 

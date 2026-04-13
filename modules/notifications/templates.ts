@@ -74,5 +74,20 @@ Ceci est un rappel concernant votre rendez-vous avec le Dr ${details.doctorName}
 Il vous reste environ ${details.minutesLeft} minutes pour effectuer votre paiement sécurisé. Passé ce délai, votre créneau sera automatiquement libéré et rendu disponible pour d'autres patients.
 
 Référence : ${details.id.toUpperCase()}`
+  }),
+
+  /**
+   * Notification d'annulation par la clinique.
+   */
+  PATIENT_CANCELLED_BY_STAFF: (details: AppointmentDetails & { reason: string }) => ({
+    template: "patient_cancelled_by_staff",
+    subject: "Annulation de votre rendez-vous - Clinique NOS",
+    body: `Bonjour ${details.patientName},
+
+Nous vous informons que votre rendez-vous avec le Dr ${details.doctorName} prévu le ${details.date} à ${details.time} a été annulé par la clinique.
+
+Motif : ${details.reason}
+
+Si vous avez déjà réglé ce rendez-vous, un remboursement sera initié prochainement. N'hésitez pas à réserver un nouveau créneau sur votre espace patient.`
   })
 };

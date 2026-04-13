@@ -29,6 +29,8 @@ enum AppointmentStatus {
   pending
   confirmed
   cancelled
+  cancelled_by_patient
+  cancelled_by_staff
   completed
   expired_unpaid
 }
