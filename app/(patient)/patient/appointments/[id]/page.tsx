@@ -95,7 +95,7 @@ export default async function PatientAppointmentDetailPage({ params }: PatientAp
                   <p className="text-xs text-slate-500 mt-1">Consultation - 60.00 €</p>
                 </div>
               </div>
-            </div>
+            
 
             <hr className="border-slate-100" />
 

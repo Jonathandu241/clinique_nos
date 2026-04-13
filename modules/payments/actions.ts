@@ -26,7 +26,7 @@ export async function confirmFakePayment(appointmentId: string) {
 
   // 3. Vérifier si le paiement est déjà effectué
   if (appointment.paymentStatus === 'paid') {
-    return { success: true, message: "Ce rendez-vous est déjà payé." };
+    return { success: true };
   }
 
   // 4. Traiter le paiement simulé.
